@@ -150,9 +150,9 @@ openApiGenerate {
 
 // Configure the commonMain source set to include the generated sources
 // Start: Uncomment this block if you are directly using generated files in commonMain.
-//kotlin.sourceSets["commonMain"].kotlin {
-//    srcDir("${layout.buildDirectory.get()}/generate-resources/main/src")
-//}
+kotlin.sourceSets["commonMain"].kotlin {
+    srcDir("${layout.buildDirectory.get()}/generate-resources/main/src")
+}
 // End
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -170,13 +170,13 @@ tasks.named("openApiGenerate") {
 
         // Start: Copy Operation: Copies the files from the generated commonMain directory to the actual commonMain source directory in your project.
         // Define source and destination directories for copying generated files
-        val sourceDir = file("${layout.buildDirectory.get()}/generate-resources/main/src/commonMain/kotlin")
-        val destinationDir = file("$projectDir/src/commonMain/kotlin") // Actual commonMain directory
-
-        copy {
-            from(sourceDir) // Source directory (generated)
-            into(destinationDir) // Destination directory (actual commonMain)
-        }
+//        val sourceDir = file("${layout.buildDirectory.get()}/generate-resources/main/src/commonMain/kotlin")
+//        val destinationDir = file("$projectDir/src/commonMain/kotlin") // Actual commonMain directory
+//
+//        copy {
+//            from(sourceDir) // Source directory (generated)
+//            into(destinationDir) // Destination directory (actual commonMain)
+//        }
         // End
 
     }
