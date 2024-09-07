@@ -1,32 +1,17 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.openapi.generator)
+    alias(libs.plugins.kotlinx.serialization)
 }
 
 kotlin {
-    wasmJs {
-        moduleName = "composeApp"
-        browser {
-            val projectDirPath = project.projectDir.path
-            commonWebpackConfig {
-                outputFileName = "composeApp.js"
-                devServer = (devServer ?: KotlinWebpackConfig.DevServer()).apply {
-                    static = (static ?: mutableListOf()).apply {
-                        // Serve sources to debug inside browser
-                        add(projectDirPath)
-                    }
-                }
-            }
-        }
-        binaries.executable()
-    }
     
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -54,6 +39,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+
+            // Ktor
+            implementation(libs.ktor.client.android)
+
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -64,10 +53,31 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+
+            implementation(libs.kotlinx.datetime)
+
+            // Ktor
+            implementation(libs.ktor.core)
+            implementation(libs.ktor.json)
+            implementation(libs.ktor.logging)
+            implementation(libs.ktor.negotiation)
+            implementation(libs.kotlinx.serialization.json)
+
+            //Kermit  for logging
+            implementation(libs.kermit)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+
+            // ktor
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.ktor.client.java)
             implementation(libs.kotlinx.coroutines.swing)
+        }
+        iosMain.dependencies {
+
+            // Ktor
+            implementation(libs.ktor.client.darwin)
         }
     }
 }
@@ -118,5 +128,41 @@ compose.desktop {
             packageName = "com.coding.meet.sampleopengenerator"
             packageVersion = "1.0.0"
         }
+    }
+}
+openApiGenerate {
+    skipValidateSpec.set(true)
+    inputSpec.set("$rootDir/openapi/json-placeholder-api.yaml")
+    generatorName.set("kotlin")
+    library.set("multiplatform")
+    packageName.set("com.coding.meet.sampleopengenerator")
+    generateApiTests.set(false)
+    generateModelTests.set(false)
+    configOptions.set(
+        mapOf(
+            "useCoroutines" to "true",
+            "dateLibrary" to "kotlinx-datetime",
+            "generateSupportingFiles" to "false"
+        )
+    )
+
+}
+
+kotlin.sourceSets["commonMain"].kotlin {
+    srcDir("${layout.buildDirectory.get()}/generate-resources/main/src")
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    dependsOn("openApiGenerate")
+}
+tasks.named("openApiGenerate") {
+    doLast {
+        // Remove the test directories
+        delete(
+            fileTree("${layout.buildDirectory.get()}/generate-resources/main/src/commonTest"),
+            fileTree("${layout.buildDirectory.get()}/generate-resources/main/src/iosTest"),
+            fileTree("${layout.buildDirectory.get()}/generate-resources/main/src/jsTest"),
+            fileTree("${layout.buildDirectory.get()}/generate-resources/main/src/jvmTest")
+        )
     }
 }
